@@ -3,7 +3,6 @@
     "ext-zip": "*",
     "ext-pdo": "*",
     "symfony/console": "^6.3",
-    "doctrine/dbal": "^3.6",
     "mlocati/ip-lib": "^1.18"
   },
   "autoload": {
