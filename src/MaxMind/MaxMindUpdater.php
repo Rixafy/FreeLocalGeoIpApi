@@ -6,7 +6,6 @@ namespace App\MaxMind;
 
 use App\Application\Database\DatabaseConnectionProvider;
 use IPLib\Factory;
-use PDO;
 use RuntimeException;
 use ZipArchive;
 
@@ -41,7 +40,7 @@ final class MaxMindUpdater
 		$this->connectionProvider->provide()->query(file_get_contents(__DIR__ . '/../../resources/create_ip_blocks.sql'));
 		$this->connectionProvider->provide()->query(file_get_contents(__DIR__ . '/../../resources/create_ip_locations.sql'));
 		
-		$output('<fg=yellow>■</> Updating geoip database...');
+		$output('<fg=yellow>■</> Updating locations...');
 
 		$this->connectionProvider->getNewConnection()->query(str_replace(
 			'{filePath}',
@@ -49,11 +48,15 @@ final class MaxMindUpdater
 			file_get_contents(__DIR__ . '/../../resources/import_locations.sql')
 		));
 
+		$output('<fg=yellow>■</> Updating IPv4 blocks...');
+
 		$this->connectionProvider->getNewConnection()->query(str_replace(
 			'{filePath}', 
 			$maxmindCacheDir . '/GeoLite2-City-Blocks-IPv4.csv', 
 			file_get_contents(__DIR__ . '/../../resources/import_ipv4.sql')
 		));
+
+		$output('<fg=yellow>■</> Updating IPv6 blocks...');
 
 		$this->connectionProvider->getNewConnection()->query(str_replace(
 			'{filePath}',
@@ -107,10 +110,12 @@ final class MaxMindUpdater
 				while (($line = fgets($fpIn)) !== false) {
 					$split = explode(',', $line);
 					if ($split[0] === 'network') {
+						$split[0] = 'network,ip_from,ip_to';
+						fwrite($fpOut, implode(',', $split));
 						continue;
 					}
 					$range = Factory::parseRangeString($split[0]);
-					$split[0] = $range->getStartAddress()->toString() . ',' . $range->getEndAddress()->toString();
+					$split[0] = $split[0] . ',' . $range->getStartAddress()->toString() . ',' . $range->getEndAddress()->toString();
 					fwrite($fpOut, implode(',', $split));
 				}
 				fclose($fpIn);
